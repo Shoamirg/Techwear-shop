@@ -1,0 +1,218 @@
+alert("After a long time I'm finally done with this project 😅. I'm having troubles with deployment on my vercel account i hope everything works fine for mobile users this way")
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize cart
+    let cart = [];
+    let total = 0;
+
+    // Theme toggle function 
+    const themeToggle = document.getElementById('themeToggle');
+    themeToggle.addEventListener('click', function() {
+        document.body.classList.toggle('theme-red');
+        const icon = this.querySelector('i');
+        if (document.body.classList.contains('theme-red')) {
+            icon.classList.remove('fa-palette');
+            icon.classList.add('fa-moon');
+        } else {
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-palette');
+        }
+    });
+
+    // Parallax effect for hero section idea from youtube for best ui 
+    const hero = document.querySelector('.hero');
+    if (hero) {
+        window.addEventListener('scroll', function() {
+            const scrollPosition = window.pageYOffset;
+            hero.style.backgroundPositionY = scrollPosition * 0.5 + 'px';
+        });
+    }
+
+    // Scroll-triggered animations
+    const animateOnScroll = function() {
+        const elements = document.querySelectorAll('.mission p, .product-card, .contact form');
+        
+        elements.forEach(element => {
+            const elementPosition = element.getBoundingClientRect().top;
+            const windowHeight = window.innerHeight;
+            
+            if (elementPosition < windowHeight - 100) {
+                element.classList.add('animate');
+            }
+        });
+    };
+
+    window.addEventListener('scroll', animateOnScroll);
+    animateOnScroll(); // Run once loades
+
+    // Update cyber time
+    function updateCyberTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        document.getElementById('cyber-time').textContent = timeString;
+    }
+
+    setInterval(updateCyberTime, 1000);
+    updateCyberTime();
+
+    // Checkout steps function 
+    document.querySelectorAll('.next-step').forEach(button => {
+        button.addEventListener('click', function() {
+            const nextStep = this.getAttribute('data-next');
+            goToStep(nextStep);
+        });
+    });
+
+    function goToStep(stepNumber) {
+        // Hide step contents
+        document.querySelectorAll('.step-content').forEach(content => {
+            content.classList.add('hidden');
+        });
+        
+        // Show current step content
+        document.querySelector(`.step-content[data-step-content="${stepNumber}"]`).classList.remove('hidden');
+        
+        // Update step indicator
+        document.querySelectorAll('.step').forEach(step => {
+            step.classList.remove('active');
+            if (parseInt(step.getAttribute('data-step')) <= parseInt(stepNumber)) {
+                step.classList.add('active');
+            }
+        });
+    }
+
+    function resetCheckout() {
+        goToStep(1);
+        clearCart();
+    }
+
+    // 3D Viewer function
+    function open3DViewer(productId) {
+        const modal = document.getElementById('3d-viewer-modal');
+        const iframe = document.getElementById('3d-viewer-frame');
+        
+        // iframe.src = `https://my3dviewer.com/embed?id=${productId}`;
+        
+        modal.classList.add('active');
+    }
+
+    function close3DViewer() {
+        const modal = document.getElementById('3d-viewer-modal');
+        modal.classList.remove('active');
+    }
+
+    // Cart function
+    function addToCart(item, price) {
+        const discount = parseInt(document.getElementById("discount").value);
+        const discountedPrice = price * (1 - discount / 100);
+        
+        // Check if item already exists in cart
+        const existingItemIndex = cart.findIndex(product => product.item === item);
+        
+        if (existingItemIndex !== -1) {
+            // Update quantity if item exists
+            cart[existingItemIndex].quantity += 1;
+            cart[existingItemIndex].price += discountedPrice;
+        } else {
+            // Add new item to cart
+            cart.push({ 
+                item, 
+                price: discountedPrice,
+                quantity: 1
+            });
+        }
+        
+        total += discountedPrice;
+        updateCart();
+        
+        // Create notification
+        createNotification(`${item} added to cart!`);
+    }
+
+    function removeFromCart(index) {
+        total -= cart[index].price;
+        cart.splice(index, 1);
+        updateCart();
+    }
+
+    function updateCart() {
+        const cartList = document.getElementById("cart-items");
+        const cartTotal = document.getElementById("cart-total");
+        
+        cartList.innerHTML = cart.map((product, index) => `
+            <li>
+                <span>${product.item} (${product.quantity})</span>
+                <span>$${product.price.toFixed(2)}</span>
+                <button class="remove-item" onclick="removeFromCart(${index})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </li>
+        `).join("");
+        
+        cartTotal.textContent = total.toFixed(2);
+    }
+
+    function clearCart() {
+        cart = [];
+        total = 0;
+        updateCart();
+        createNotification("Cart cleared!");
+    }
+
+    function createNotification(message) {
+        const notification = document.createElement('div');
+        notification.className = 'notification';
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 10);
+        
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        }, 3000);
+    }
+
+    //  functions Globally available 🌎
+    window.addToCart = addToCart;
+    window.removeFromCart = removeFromCart;
+    window.clearCart = clearCart;
+    window.open3DViewer = open3DViewer;
+    window.close3DViewer = close3DViewer;
+    window.goToStep = goToStep;
+    window.resetCheckout = resetCheckout;
+});
+
+//  notification style
+const style = document.createElement('style');
+style.textContent = `
+.notification {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--primary);
+    color: var(--bg-dark);
+    padding: 15px 30px;
+    border-radius: 50px;
+    font-weight: 600;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.notification.show {
+    opacity: 1;
+    bottom: 30px;
+}
+`;
+document.head.appendChild(style);
